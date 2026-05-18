@@ -1,5 +1,6 @@
 using System;
 using System.Data;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace SocietiesManagementSystem
@@ -9,63 +10,76 @@ namespace SocietiesManagementSystem
         public SocietiesBrowserForm()
         {
             InitializeComponent();
+            this.Load += SocietiesBrowserForm_Load;
+        }
+
+        private void SocietiesBrowserForm_Load(object sender, EventArgs e)
+        {
             LoadSocieties();
         }
 
-        private void LoadSocieties(string filter = "")
+        private void LoadSocieties(string searchText = "")
         {
-            // For now, return dummy data (in-memory mode)
-            DataTable dt = new DataTable();
-            dt.Columns.Add("society_id", typeof(int));
-            dt.Columns.Add("name", typeof(string));
-            dt.Columns.Add("category", typeof(string));
-            dt.Columns.Add("description", typeof(string));
-            dt.Columns.Add("MemberCount", typeof(int));
-
-            dt.Rows.Add(1, "FAST Programming Club", "Technical", "A club for coding enthusiasts", 45);
-            dt.Rows.Add(2, "Drama Society", "Cultural", "Theater and acting club", 30);
-            dt.Rows.Add(3, "Robotics Club", "Technical", "Building and competing robots", 25);
-            dt.Rows.Add(4, "Debate Club", "Literary", "Improve public speaking skills", 35);
-
-            if (!string.IsNullOrEmpty(filter))
+            DataTable dt = DatabaseHelper.GetAllSocieties();
+            
+            // Apply filter if search text is provided
+            if (!string.IsNullOrWhiteSpace(searchText))
             {
-                // Simple client-side filter
-                var filteredRows = dt.AsEnumerable()
-                    .Where(row => row.Field<string>("name").ToLower().Contains(filter.ToLower()) ||
-                                  row.Field<string>("category").ToLower().Contains(filter.ToLower()));
-
-                if (filteredRows.Any())
-                {
-                    dt = filteredRows.CopyToDataTable();
-                }
-                else
-                {
-                    dt.Clear();
-                }
+                DataView dv = dt.DefaultView;
+                dv.RowFilter = $"Name LIKE '%{searchText}%'";
+                societiesDataGridView.DataSource = dv;
+            }
+            else
+            {
+                societiesDataGridView.DataSource = dt;
             }
 
-            societiesDataGridView.DataSource = dt;
-
-            if (societiesDataGridView.Columns.Contains("society_id"))
-                societiesDataGridView.Columns["society_id"].Visible = false;
+            // Hide ID column if exists
+            if (societiesDataGridView.Columns.Contains("SocietyId"))
+                societiesDataGridView.Columns["SocietyId"].Visible = false;
         }
 
         private void searchTextBox_TextChanged(object sender, EventArgs e)
         {
-            LoadSocieties(searchTextBox.Text.Trim());
+            // Assuming you have a searchTextBox control
+            // string searchText = searchTextBox.Text.Trim();
+            // LoadSocieties(searchText);
         }
 
         private void btnJoin_Click(object sender, EventArgs e)
         {
             if (societiesDataGridView.SelectedRows.Count == 0)
             {
-                MessageBox.Show("Please select a society to join.");
+                MessageBox.Show("Please select a society to join.", "Warning", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            string societyName = societiesDataGridView.SelectedRows[0].Cells["name"].Value.ToString();
-            MessageBox.Show($"Application to join '{societyName}' has been submitted!\n(Waiting for approval)", 
-                           "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            int societyId = Convert.ToInt32(societiesDataGridView.SelectedRows[0].Cells["SocietyId"].Value);
+            int studentId = SessionManagement.CurrentUserId;
+
+            // Check if already a member
+            var existingMembership = DatabaseHelper.Memberships
+                .FirstOrDefault(m => m.StudentId == studentId && m.SocietyId == societyId);
+            
+            if (existingMembership != null)
+            {
+                MessageBox.Show("You have already applied to this society.", "Info", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            // Apply for membership
+            DatabaseHelper.ApplyForMembership(studentId, societyId);
+            DatabaseHelper.LogActivity(studentId, "MEMBERSHIP_APPLY", $"Applied to society ID: {societyId}");
+            
+            MessageBox.Show("Membership request submitted successfully!", "Success", 
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private void btnRefresh_Click(object sender, EventArgs e)
+        {
+            LoadSocieties();
         }
     }
 }

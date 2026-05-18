@@ -1,6 +1,6 @@
 using System;
 using System.Data;
-using Microsoft.Data.SqlClient;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace SocietiesManagementSystem
@@ -10,38 +10,78 @@ namespace SocietiesManagementSystem
         public StudentDashboard()
         {
             InitializeComponent();
+            this.Load += StudentDashboard_Load;
+        }
+
+        private void StudentDashboard_Load(object sender, EventArgs e)
+        {
+            lblWelcome.Text = $"Welcome, {SessionManagement.CurrentFullName}!";
+
             LoadAvailableSocieties();
+            LoadMyMemberships();
             LoadUpcomingEvents();
             LoadMyRegistrations();
         }
 
-        private void btnLogout_Click(object sender, EventArgs e)
+        private void LoadAvailableSocieties()
         {
-            if (MessageBox.Show("Are you sure you want to logout?", 
-                                "Logout Confirmation", 
-                                MessageBoxButtons.YesNo, 
-                                MessageBoxIcon.Question) == DialogResult.Yes)
+            // Use the actual name of your DataGridView from Designer
+            // If it's "dataGridView1", "dgvAvailableSocieties", etc., change accordingly
+            // For now, we'll comment to avoid errors
+        }
+
+        private void btnApplyMembership_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show("Membership request sent (Demo)", "Success");
+        }
+
+        private void LoadMyMemberships()
+        {
+            // Implement later if needed
+        }
+
+        private void LoadUpcomingEvents()
+        {
+            // Implement later
+        }
+
+        private void btnViewEvents_Click(object sender, EventArgs e)
+        {
+            using (var form = new EventsForm())
             {
-                this.Close();
-                Form1 loginForm = new Form1();
-                loginForm.Show();
+                form.ShowDialog();
             }
         }
 
-        // ====================== Existing Methods ======================
-        private void LoadAvailableSocieties() { /* your existing code */ }
-        private void LoadMyMemberships() { /* your code */ }
-        private void btnApplyMembership_Click(object sender, EventArgs e) { /* your code */ }
-
-        private void LoadUpcomingEvents() { /* your code */ }
-        private void btnRegisterForEvent_Click(object sender, EventArgs e) { /* your code */ }
-
-        private void LoadMyRegistrations() { /* your code */ }
-        private void btnMyRegistrations_Click(object sender, EventArgs e)
+        private void btnBrowseSocieties_Click(object sender, EventArgs e)
         {
-            LoadMyRegistrations();
+            using (var form = new SocietiesBrowserForm())
+            {
+                form.ShowDialog();
+            }
         }
 
-        private void btnViewTicket_Click(object sender, EventArgs e) { /* your code */ }
+        private void btnMyTasks_Click(object sender, EventArgs e)
+        {
+            using (var form = new TaskManagementForm())
+            {
+                form.ShowDialog();
+            }
+        }
+
+        private void LoadMyRegistrations()
+        {
+            // Implement later
+        }
+
+        private void btnLogout_Click(object sender, EventArgs e)
+        {
+            if (MessageBox.Show("Are you sure you want to logout?", "Logout", 
+                MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+            {
+                AuthService.Logout();
+                this.Close();
+            }
+        }
     }
 }

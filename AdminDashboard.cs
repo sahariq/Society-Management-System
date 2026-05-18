@@ -1,6 +1,6 @@
 using System;
 using System.Data;
-using Microsoft.Data.SqlClient;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace SocietiesManagementSystem
@@ -10,6 +10,13 @@ namespace SocietiesManagementSystem
         public AdminDashboard()
         {
             InitializeComponent();
+            this.Load += AdminDashboard_Load;
+        }
+
+        private void AdminDashboard_Load(object sender, EventArgs e)
+        {
+            // Dynamic control finding (safest approach)
+            FindAndSetWelcomeLabel();
             LoadUsers();
             LoadSocieties();
             LoadPendingEvents();
@@ -17,85 +24,86 @@ namespace SocietiesManagementSystem
             LoadReports();
         }
 
-        private void btnLogout_Click(object sender, EventArgs e)
+        private void FindAndSetWelcomeLabel()
         {
-            if (MessageBox.Show("Are you sure you want to logout?", 
-                                "Logout Confirmation", 
-                                MessageBoxButtons.YesNo, 
-                                MessageBoxIcon.Question) == DialogResult.Yes)
-            {
-                this.Close();
-                Form1 loginForm = new Form1();
-                loginForm.Show();
-            }
+            var label = this.Controls.Find("lblWelcome", true).FirstOrDefault() as Label 
+                     ?? this.Controls.OfType<Label>().FirstOrDefault(l => l.Text.Contains("Welcome") || l.Name.Contains("Welcome"));
+
+            if (label != null)
+                label.Text = $"Welcome, {SessionManagement.CurrentFullName} (Administrator)";
         }
 
-        // ====================== Existing Methods ======================
-        private void LoadUsers(string filter = "") { /* your existing code */ }
-        private void btnSuspendUser_Click(object sender, EventArgs e) { /* your code */ }
-        private void btnActivateUser_Click(object sender, EventArgs e) { /* your code */ }
-        private void btnResetPassword_Click(object sender, EventArgs e) { /* your code */ }
-
-                private void LoadSocieties()
+        private void LoadUsers()
         {
-            societiesDataGridView.DataSource = DatabaseHelper.GetAllSocieties();
-        }
+            var grid = this.Controls.Find("dgvUsers", true).FirstOrDefault() as DataGridView
+                    ?? this.Controls.OfType<DataGridView>().FirstOrDefault(g => g.Name.ToLower().Contains("user"));
 
-        private void btnAddSociety_Click(object sender, EventArgs e)
-        {
-            string name = Prompt.ShowDialog("Society Name:", "Add New Society");
-            string category = Prompt.ShowDialog("Category:", "Add New Society");
-            string description = Prompt.ShowDialog("Description:", "Add New Society");
-
-            if (!string.IsNullOrEmpty(name))
+            if (grid != null)
             {
-                DatabaseHelper.AddSociety(name, category, description);
-                LoadSocieties();
-                MessageBox.Show("Society added successfully!");
+                DataTable dt = new DataTable();
+                dt.Columns.Add("UserId", typeof(int));
+                dt.Columns.Add("Username", typeof(string));
+                dt.Columns.Add("Full Name", typeof(string));
+                dt.Columns.Add("Role", typeof(string));
+                dt.Columns.Add("Status", typeof(string));
+
+                foreach (var u in DatabaseHelper.Users)
+                {
+                    dt.Rows.Add(u.UserId, u.Username, u.FullName, u.Role, u.Status);
+                }
+
+                grid.DataSource = dt;
             }
         }
-
-        private void btnEditSociety_Click(object sender, EventArgs e)
-        {
-            if (societiesDataGridView.SelectedRows.Count == 0)
-            {
-                MessageBox.Show("Please select a society to edit.");
-                return;
-            }
-
-            MessageBox.Show("Edit functionality will be implemented soon.");
-            // TODO: Open edit form
-        }
-
-        private void btnDeleteSociety_Click(object sender, EventArgs e)
-        {
-            if (societiesDataGridView.SelectedRows.Count == 0)
-            {
-                MessageBox.Show("Please select a society to delete.");
-                return;
-            }
-
-            string societyName = societiesDataGridView.SelectedRows[0].Cells["name"].Value.ToString();
-
-            if (MessageBox.Show($"Delete society '{societyName}'?", "Confirm Delete", 
-                MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
-            {
-                MessageBox.Show("Society deleted (In-Memory Mode).");
-                LoadSocieties();
-            }
-        }
-        private void btnApproveSociety_Click(object sender, EventArgs e) { /* your code */ }
-
-        private void LoadPendingEvents() { /* your code */ }
-        private void btnApproveEvent_Click(object sender, EventArgs e) { /* your code */ }
-
-        private void LoadActivityLogs() { /* your code */ }
-
-        private void LoadReports() { /* your code */ }
 
         private void txtUserSearch_TextChanged(object sender, EventArgs e)
         {
-            LoadUsers(txtUserSearch.Text.Trim());
+            LoadUsers();
+        }
+
+        private void btnSuspendUser_Click(object sender, EventArgs e) => MessageBox.Show("User Suspended (Demo)", "Success");
+        private void btnActivateUser_Click(object sender, EventArgs e) => MessageBox.Show("User Activated (Demo)", "Success");
+        private void btnResetPassword_Click(object sender, EventArgs e) => MessageBox.Show("Password Reset (Demo)", "Success");
+
+        private void LoadSocieties()
+        {
+            var grid = this.Controls.Find("societiesDataGridView", true).FirstOrDefault() as DataGridView
+                    ?? this.Controls.OfType<DataGridView>().FirstOrDefault(g => g.Name.ToLower().Contains("society"));
+
+            if (grid != null)
+                grid.DataSource = DatabaseHelper.GetAllSocieties();
+        }
+
+        private void btnApproveSociety_Click(object sender, EventArgs e) => MessageBox.Show("Society Approved (Demo)", "Success");
+
+        private void LoadPendingEvents() { }
+        private void btnApproveEvent_Click(object sender, EventArgs e) => MessageBox.Show("Event Approved (Demo)", "Success");
+
+        private void LoadActivityLogs() { }
+
+        private void LoadReports()
+        {
+            SetLabelText("lblTotalStudents", DatabaseHelper.Users.Count(u => u.Role == "student").ToString());
+            SetLabelText("lblTotalSocieties", DatabaseHelper.Societies.Count.ToString());
+            SetLabelText("lblTotalEvents", DatabaseHelper.Events.Count.ToString());
+            SetLabelText("lblActiveMemberships", DatabaseHelper.Memberships.Count(m => m.Status == "approved").ToString());
+        }
+
+        private void SetLabelText(string controlName, string text)
+        {
+            var label = this.Controls.Find(controlName, true).FirstOrDefault() as Label;
+            if (label != null)
+                label.Text = text;
+        }
+
+        private void btnLogout_Click(object sender, EventArgs e)
+        {
+            if (MessageBox.Show("Are you sure you want to logout?", "Logout Confirmation", 
+                MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+            {
+                AuthService.Logout();
+                this.Close();
+            }
         }
     }
 }

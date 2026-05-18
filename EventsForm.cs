@@ -1,6 +1,6 @@
 using System;
 using System.Data;
-using Microsoft.Data.SqlClient;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace SocietiesManagementSystem
@@ -10,41 +10,60 @@ namespace SocietiesManagementSystem
         public EventsForm()
         {
             InitializeComponent();
+            this.Load += EventsForm_Load;
+        }
+
+        private void EventsForm_Load(object sender, EventArgs e)
+        {
             LoadEvents();
         }
 
         private void LoadEvents(string filter = "")
         {
-            string query = @"SELECT e.event_id, e.title AS [Event Name], s.name AS [Society], 
-                             e.event_date AS [Date], e.venue, e.capacity, 
-                             e.approval_status AS [Status]
-                             FROM Events e 
-                             JOIN Societies s ON e.society_id = s.society_id";
+            DataTable dt = new DataTable();
+            dt.Columns.Add("EventId", typeof(int));
+            dt.Columns.Add("Event Name", typeof(string));
+            dt.Columns.Add("Society", typeof(string));
+            dt.Columns.Add("Date", typeof(string));
+            dt.Columns.Add("Venue", typeof(string));      // Changed from Location
+            dt.Columns.Add("Capacity", typeof(int));      // Changed from MaxParticipants
+            dt.Columns.Add("Status", typeof(string));
 
-            if (!string.IsNullOrEmpty(filter))
+            var query = DatabaseHelper.Events.AsEnumerable();
+
+            if (!string.IsNullOrWhiteSpace(filter))
             {
-                query += " WHERE e.title LIKE @filter OR s.name LIKE @filter";
+                query = query.Where(ev =>
+                    ev.Title.Contains(filter, StringComparison.OrdinalIgnoreCase));
             }
 
-            query += " ORDER BY e.event_date DESC";
+            foreach (var ev in query.OrderByDescending(ev => ev.EventDate))
+            {
+                var society = DatabaseHelper.Societies.FirstOrDefault(s => s.SocietyId == ev.SocietyId);
+                dt.Rows.Add(
+                    ev.EventId,
+                    ev.Title,
+                    society?.Name ?? "Unknown",
+                    ev.EventDate.ToString("dd MMM yyyy HH:mm"),
+                    ev.Venue,           // Changed from Location
+                    ev.Capacity,        // Changed from MaxParticipants
+                    ev.Status
+                );
+            }
 
-            Microsoft.Data.SqlClient.SqlParameter[] parameters = string.IsNullOrEmpty(filter) 
-                ? null 
-                : new Microsoft.Data.SqlClient.SqlParameter[] { new SqlParameter("@filter", "%" + filter + "%") };
-
-            eventsDataGridView.DataSource = DatabaseHelper.ExecuteQuery(query, parameters);
+            eventsDataGridView.DataSource = dt;
 
             // Hide ID column
-            if (eventsDataGridView.Columns.Contains("event_id"))
-                eventsDataGridView.Columns["event_id"].Visible = false;
+            if (eventsDataGridView.Columns.Contains("EventId"))
+                eventsDataGridView.Columns["EventId"].Visible = false;
         }
 
         private void filterButton_Click(object sender, EventArgs e)
         {
-            // Safe check in case searchTextBox doesn't exist in designer yet
             string filterText = "";
-            // If you add searchTextBox later in designer, you can uncomment below:
-            // if (searchTextBox != null) filterText = searchTextBox.Text.Trim();
+            
+            // If you have a search TextBox in the designer, use it:
+            // filterText = searchTextBox.Text.Trim();
 
             LoadEvents(filterText);
         }
@@ -53,52 +72,69 @@ namespace SocietiesManagementSystem
         {
             if (eventsDataGridView.SelectedRows.Count == 0)
             {
-                MessageBox.Show("Please select an event to register.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Please select an event to register.", "Warning", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            int eventId = Convert.ToInt32(eventsDataGridView.SelectedRows[0].Cells["event_id"].Value);
-            int studentId = SessionManagement.CurrentUser.UserId;
+            int eventId = Convert.ToInt32(eventsDataGridView.SelectedRows[0].Cells["EventId"].Value);
+            int studentId = SessionManagement.CurrentUserId;
 
-            string checkQuery = "SELECT COUNT(*) FROM EventRegistrations WHERE student_id=@sid AND event_id=@eid";
-            Microsoft.Data.SqlClient.SqlParameter[] checkParams = 
-            { 
-                new Microsoft.Data.SqlClient.SqlParameter("@sid", studentId),
-                new Microsoft.Data.SqlClient.SqlParameter("@eid", eventId)
-            };
-
-            int alreadyRegistered = Convert.ToInt32(DatabaseHelper.ExecuteScalar(checkQuery, checkParams));
-
-            if (alreadyRegistered > 0)
+            // Check if already registered
+            if (DatabaseHelper.EventRegistrations.Any(r => r.EventId == eventId && r.StudentId == studentId))
             {
-                MessageBox.Show("You are already registered for this event.");
+                MessageBox.Show("You are already registered for this event.", "Info", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
-            string ticketNumber = $"TKT-{eventId}-{studentId}-{Guid.NewGuid().ToString("N").Substring(0, 6).ToUpper()}";
+            var selectedEvent = DatabaseHelper.Events.FirstOrDefault(ev => ev.EventId == eventId);
+            if (selectedEvent == null) return;
 
-            string insertQuery = @"INSERT INTO EventRegistrations 
-                (student_id, event_id, registration_date, ticket_number, created_at, updated_at)
-                VALUES (@sid, @eid, SYSDATETIME(), @ticket, SYSDATETIME(), SYSDATETIME())";
+            // Check capacity
+            int currentRegistrations = DatabaseHelper.EventRegistrations.Count(r => r.EventId == eventId);
+            if (currentRegistrations >= selectedEvent.Capacity)
+            {
+                MessageBox.Show("Sorry, this event is already full!", "Capacity Reached", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
 
-            Microsoft.Data.SqlClient.SqlParameter[] insertParams = 
-            { 
-                new Microsoft.Data.SqlClient.SqlParameter("@sid", studentId),
-                new Microsoft.Data.SqlClient.SqlParameter("@eid", eventId),
-                new Microsoft.Data.SqlClient.SqlParameter("@ticket", ticketNumber)
+            // Generate ticket number
+            string ticketNumber = $"TKT-{DateTime.Now:yyyyMMdd}-{studentId}-{eventId}";
+
+            // Create new registration
+            var registration = new EventRegistration
+            {
+                RegistrationId = DatabaseHelper.EventRegistrations.Count + 1,
+                EventId = eventId,
+                StudentId = studentId,
+                RegistrationDate = DateTime.Now,
+                TicketNumber = ticketNumber      // Using TicketNumber property
             };
+            
+            DatabaseHelper.EventRegistrations.Add(registration);
 
-            DatabaseHelper.ExecuteNonQuery(insertQuery, insertParams);
+            DatabaseHelper.LogActivity(studentId, "EVENT_REGISTER", $"Registered for: {selectedEvent.Title}");
 
-            MessageBox.Show($"Registration Successful!\nYour Ticket: {ticketNumber}", "Success", 
-                           MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show($"✅ Registration Successful!\n\nYour Ticket Number:\n{ticketNumber}\n\nPlease save this number.", 
+                "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
-            LoadEvents();
+            LoadEvents(); // Refresh
         }
 
         private void refreshButton_Click(object sender, EventArgs e)
         {
             LoadEvents();
+        }
+
+        // Optional: Open this form as dialog from Student Dashboard
+        public static void ShowAsDialog()
+        {
+            using (var form = new EventsForm())
+            {
+                form.ShowDialog();
+            }
         }
     }
 }

@@ -1,15 +1,7 @@
+// This file is kept only for compatibility.
+// SessionManagement is already defined in AuthService.cs
+
 namespace SocietiesManagementSystem
 {
-    public static class SessionManagement
-    {
-        public static int UserId { get; set; }
-        public static string Role { get; set; }
-        public static SessionUser CurrentUser { get; set; } = new SessionUser();
-    }
-
-    public class SessionUser
-    {
-        public int UserId { get; set; }
-        public string Role { get; set; }
-    }
+    // Empty - do not add anything here
 }

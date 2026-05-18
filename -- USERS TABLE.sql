@@ -1,102 +1,95 @@
--- USERS TABLE
+-- SQLite Database Schema for FAST Societies Management System
+
+-- Users Table
 CREATE TABLE Users (
-    user_id INT IDENTITY(1,1) PRIMARY KEY,
-    username NVARCHAR(50) NOT NULL UNIQUE,
-    password_hash NVARCHAR(255) NOT NULL,
-    full_name NVARCHAR(100) NOT NULL,
-    email NVARCHAR(100) NOT NULL UNIQUE,
-    role NVARCHAR(20) NOT NULL CHECK (role IN ('student', 'society_head', 'admin')),
-    status NVARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive')),
-    created_at DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
-    updated_at DATETIME2 NOT NULL DEFAULT SYSDATETIME()
+    UserId INTEGER PRIMARY KEY AUTOINCREMENT,
+    Username TEXT UNIQUE NOT NULL,
+    PasswordHash TEXT NOT NULL,
+    FullName TEXT NOT NULL,
+    Email TEXT UNIQUE NOT NULL,
+    Role TEXT CHECK(Role IN ('admin', 'society_head', 'student')) NOT NULL,
+    Status TEXT DEFAULT 'active',
+    CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- SOCIETIES TABLE
+-- Societies Table
 CREATE TABLE Societies (
-    society_id INT IDENTITY(1,1) PRIMARY KEY,
-    name NVARCHAR(100) NOT NULL UNIQUE,
-    description NVARCHAR(500),
-    category NVARCHAR(50),
-    status NVARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
-    creation_date DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
-    created_at DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
-    updated_at DATETIME2 NOT NULL DEFAULT SYSDATETIME()
+    SocietyId INTEGER PRIMARY KEY AUTOINCREMENT,
+    Name TEXT NOT NULL UNIQUE,
+    Description TEXT,
+    Category TEXT,
+    HeadUserId INTEGER,
+    Status TEXT DEFAULT 'pending',
+    CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (HeadUserId) REFERENCES Users(UserId) ON DELETE SET NULL
 );
 
--- SOCIETY MEMBERSHIPS TABLE
-CREATE TABLE SocietyMemberships (
-    membership_id INT IDENTITY(1,1) PRIMARY KEY,
-    student_id INT NOT NULL,
-    society_id INT NOT NULL,
-    role NVARCHAR(20) NOT NULL CHECK (role IN ('member', 'society_head')),
-    join_date DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
-    status NVARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'pending')),
-    created_at DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
-    updated_at DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
-    CONSTRAINT FK_Membership_Student FOREIGN KEY (student_id) REFERENCES Users(user_id),
-    CONSTRAINT FK_Membership_Society FOREIGN KEY (society_id) REFERENCES Societies(society_id)
+-- Memberships Table
+CREATE TABLE Memberships (
+    MembershipId INTEGER PRIMARY KEY AUTOINCREMENT,
+    StudentId INTEGER NOT NULL,
+    SocietyId INTEGER NOT NULL,
+    JoinDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+    Status TEXT DEFAULT 'pending',
+    FOREIGN KEY (StudentId) REFERENCES Users(UserId) ON DELETE CASCADE,
+    FOREIGN KEY (SocietyId) REFERENCES Societies(SocietyId) ON DELETE CASCADE,
+    UNIQUE(StudentId, SocietyId)
 );
 
--- EVENTS TABLE
+-- Events Table
 CREATE TABLE Events (
-    event_id INT IDENTITY(1,1) PRIMARY KEY,
-    title NVARCHAR(100) NOT NULL,
-    description NVARCHAR(500),
-    event_date DATETIME2 NOT NULL,
-    venue NVARCHAR(100),
-    capacity INT,
-    society_id INT NOT NULL,
-    approval_status NVARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (approval_status IN ('pending', 'approved', 'rejected')),
-    created_at DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
-    updated_at DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
-    CONSTRAINT FK_Event_Society FOREIGN KEY (society_id) REFERENCES Societies(society_id)
+    EventId INTEGER PRIMARY KEY AUTOINCREMENT,
+    SocietyId INTEGER NOT NULL,
+    Title TEXT NOT NULL,
+    Description TEXT,
+    EventDate DATETIME NOT NULL,
+    Venue TEXT,
+    Capacity INTEGER DEFAULT 50,
+    Status TEXT DEFAULT 'pending',
+    CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (SocietyId) REFERENCES Societies(SocietyId) ON DELETE CASCADE
 );
 
--- EVENT REGISTRATIONS TABLE
+-- EventRegistrations Table
 CREATE TABLE EventRegistrations (
-    registration_id INT IDENTITY(1,1) PRIMARY KEY,
-    student_id INT NOT NULL,
-    event_id INT NOT NULL,
-    registration_date DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
-    ticket_number NVARCHAR(50) NOT NULL UNIQUE,
-    created_at DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
-    updated_at DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
-    CONSTRAINT FK_Registration_Student FOREIGN KEY (student_id) REFERENCES Users(user_id),
-    CONSTRAINT FK_Registration_Event FOREIGN KEY (event_id) REFERENCES Events(event_id)
+    RegistrationId INTEGER PRIMARY KEY AUTOINCREMENT,
+    StudentId INTEGER NOT NULL,
+    EventId INTEGER NOT NULL,
+    TicketNumber TEXT UNIQUE,
+    RegistrationDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (StudentId) REFERENCES Users(UserId) ON DELETE CASCADE,
+    FOREIGN KEY (EventId) REFERENCES Events(EventId) ON DELETE CASCADE
 );
 
--- TASKS TABLE
+-- Tasks Table
 CREATE TABLE Tasks (
-    task_id INT IDENTITY(1,1) PRIMARY KEY,
-    title NVARCHAR(100) NOT NULL,
-    description NVARCHAR(500),
-    assigned_to INT NOT NULL,
-    assigned_by INT NOT NULL,
-    deadline DATETIME2 NOT NULL,
-    status NVARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'in_progress', 'completed', 'cancelled')),
-    created_at DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
-    updated_at DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
-    CONSTRAINT FK_Task_AssignedTo FOREIGN KEY (assigned_to) REFERENCES Users(user_id),
-    CONSTRAINT FK_Task_AssignedBy FOREIGN KEY (assigned_by) REFERENCES Users(user_id)
+    TaskId INTEGER PRIMARY KEY AUTOINCREMENT,
+    SocietyId INTEGER NOT NULL,
+    Title TEXT NOT NULL,
+    Description TEXT,
+    AssignedTo INTEGER NOT NULL,
+    AssignedBy INTEGER NOT NULL,
+    DueDate DATETIME,
+    Priority TEXT DEFAULT 'Medium',
+    Status TEXT DEFAULT 'pending',
+    CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (SocietyId) REFERENCES Societies(SocietyId) ON DELETE CASCADE,
+    FOREIGN KEY (AssignedTo) REFERENCES Users(UserId),
+    FOREIGN KEY (AssignedBy) REFERENCES Users(UserId)
 );
 
--- ANNOUNCEMENTS TABLE
-CREATE TABLE Announcements (
-    announcement_id INT IDENTITY(1,1) PRIMARY KEY,
-    society_id INT NOT NULL,
-    title NVARCHAR(100) NOT NULL,
-    content NVARCHAR(1000) NOT NULL,
-    posted_by INT NOT NULL,
-    post_date DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
-    created_at DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
-    updated_at DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
-    CONSTRAINT FK_Announcement_Society FOREIGN KEY (society_id) REFERENCES Societies(society_id),
-    CONSTRAINT FK_Announcement_User FOREIGN KEY (posted_by) REFERENCES Users(user_id)
+-- ActivityLogs Table
+CREATE TABLE ActivityLogs (
+    LogId INTEGER PRIMARY KEY AUTOINCREMENT,
+    UserId INTEGER NOT NULL,
+    Action TEXT NOT NULL,
+    Description TEXT,
+    Timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (UserId) REFERENCES Users(UserId) ON DELETE CASCADE
 );
 
--- INDEXES
-CREATE INDEX IX_SocietyMemberships_Student ON SocietyMemberships(student_id);
-CREATE INDEX IX_SocietyMemberships_Society ON SocietyMemberships(society_id);
-CREATE INDEX IX_Events_Society ON Events(society_id);
-CREATE INDEX IX_EventRegistrations_Student ON EventRegistrations(student_id);
-CREATE INDEX IX_EventRegistrations_Event ON EventRegistrations(event_id);
+-- Default Data
+INSERT OR IGNORE INTO Users (Username, PasswordHash, FullName, Email, Role, Status) VALUES
+('admin', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 'System Admin', 'admin@fast.edu.pk', 'admin', 'active'),
+('head', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', 'Ahmed Khan', 'ahmed.khan@fast.edu.pk', 'society_head', 'active'),
+('student', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', 'Ali Hassan', 'ali.hassan@fast.edu.pk', 'student', 'active');

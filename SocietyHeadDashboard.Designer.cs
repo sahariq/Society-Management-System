@@ -2,163 +2,170 @@ namespace SocietiesManagementSystem
 {
     partial class SocietyHeadDashboard
     {
-        /// <summary>
-        /// Required designer variable.
-        /// </summary>
         private System.ComponentModel.IContainer components = null;
+        private System.Windows.Forms.Label lblWelcome;
+        private System.Windows.Forms.TextBox txtName;
+        private System.Windows.Forms.TextBox txtDescription;
+        private System.Windows.Forms.TextBox txtCategory;
+        private System.Windows.Forms.DataGridView membershipRequestsDataGridView;
+        private System.Windows.Forms.DataGridView eventsDataGridView;
+        private System.Windows.Forms.DataGridView membersDataGridView;
+        private System.Windows.Forms.DataGridView tasksDataGridView;
+        private System.Windows.Forms.Button btnUpdateSociety;
+        private System.Windows.Forms.Button btnApprove;
+        private System.Windows.Forms.Button btnReject;
+        private System.Windows.Forms.Button btnAddEvent;
+        private System.Windows.Forms.Button btnAssignTask;
 
-        #region Windows Form Designer generated code
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && (components != null))
+            {
+                components.Dispose();
+            }
+            base.Dispose(disposing);
+        }
 
         private void InitializeComponent()
         {
-            this.components = new System.ComponentModel.Container();
-
-            this.tabControlMain = new System.Windows.Forms.TabControl();
-            this.tabProfile = new System.Windows.Forms.TabPage();
-            this.tabMembershipRequests = new System.Windows.Forms.TabPage();
-            this.tabEvents = new System.Windows.Forms.TabPage();
-            this.tabMembers = new System.Windows.Forms.TabPage();
-            this.tabTasks = new System.Windows.Forms.TabPage();
-
             this.lblWelcome = new System.Windows.Forms.Label();
-            this.btnLogout = new System.Windows.Forms.Button();
-
-            // Profile Tab Controls
             this.txtName = new System.Windows.Forms.TextBox();
             this.txtDescription = new System.Windows.Forms.TextBox();
             this.txtCategory = new System.Windows.Forms.TextBox();
-            this.btnUpdateSociety = new System.Windows.Forms.Button();
-            this.labelName = new System.Windows.Forms.Label();
-            this.labelDescription = new System.Windows.Forms.Label();
-            this.labelCategory = new System.Windows.Forms.Label();
-
-            // Membership Requests Tab
             this.membershipRequestsDataGridView = new System.Windows.Forms.DataGridView();
+            this.eventsDataGridView = new System.Windows.Forms.DataGridView();
+            this.membersDataGridView = new System.Windows.Forms.DataGridView();
+            this.tasksDataGridView = new System.Windows.Forms.DataGridView();
+            this.btnUpdateSociety = new System.Windows.Forms.Button();
             this.btnApprove = new System.Windows.Forms.Button();
             this.btnReject = new System.Windows.Forms.Button();
-
-            // Events Tab
-            this.eventsDataGridView = new System.Windows.Forms.DataGridView();
             this.btnAddEvent = new System.Windows.Forms.Button();
-            this.btnEditEvent = new System.Windows.Forms.Button();
-            this.btnDeleteEvent = new System.Windows.Forms.Button();
-
-            // Members Tab
-            this.membersDataGridView = new System.Windows.Forms.DataGridView();
-            this.btnRemoveMember = new System.Windows.Forms.Button();
-            this.btnChangeRole = new System.Windows.Forms.Button();
-            this.roleComboBox = new System.Windows.Forms.ComboBox();
-
-            // Tasks Tab
-            this.tasksDataGridView = new System.Windows.Forms.DataGridView();
             this.btnAssignTask = new System.Windows.Forms.Button();
-
-            this.tabControlMain.SuspendLayout();
-            this.tabProfile.SuspendLayout();
-            this.tabMembershipRequests.SuspendLayout();
-            this.tabEvents.SuspendLayout();
-            this.tabMembers.SuspendLayout();
-            this.tabTasks.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.membershipRequestsDataGridView)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.eventsDataGridView)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.membersDataGridView)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.tasksDataGridView)).BeginInit();
+            
             this.SuspendLayout();
-
+            
             // lblWelcome
-            this.lblWelcome.Dock = System.Windows.Forms.DockStyle.Top;
-            this.lblWelcome.Font = new System.Drawing.Font("Segoe UI", 14F, System.Drawing.FontStyle.Bold);
-            this.lblWelcome.Location = new System.Drawing.Point(0, 0);
+            this.lblWelcome.AutoSize = true;
+            this.lblWelcome.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Bold);
+            this.lblWelcome.Location = new System.Drawing.Point(12, 9);
             this.lblWelcome.Name = "lblWelcome";
-            this.lblWelcome.Size = new System.Drawing.Size(1200, 50);
-            this.lblWelcome.TabIndex = 99;
-            this.lblWelcome.Text = "Society Head Dashboard";
-            this.lblWelcome.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-
-            // Logout Button (Top Right)
-            this.btnLogout.Location = new System.Drawing.Point(1050, 15);
-            this.btnLogout.Name = "btnLogout";
-            this.btnLogout.Size = new System.Drawing.Size(120, 38);
-            this.btnLogout.Text = "Logout";
-            this.btnLogout.BackColor = System.Drawing.Color.IndianRed;
-            this.btnLogout.ForeColor = System.Drawing.Color.White;
-            this.btnLogout.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
-            this.btnLogout.Click += new System.EventHandler(this.btnLogout_Click);
-
-            // tabControlMain
-            this.tabControlMain.Controls.Add(this.tabProfile);
-            this.tabControlMain.Controls.Add(this.tabMembershipRequests);
-            this.tabControlMain.Controls.Add(this.tabEvents);
-            this.tabControlMain.Controls.Add(this.tabMembers);
-            this.tabControlMain.Controls.Add(this.tabTasks);
-            this.tabControlMain.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tabControlMain.Location = new System.Drawing.Point(0, 50);
-            this.tabControlMain.Name = "tabControlMain";
-            this.tabControlMain.Size = new System.Drawing.Size(1200, 650);
-            this.tabControlMain.TabIndex = 0;
-
-            // Profile Tab
-            this.tabProfile.Controls.Add(this.btnUpdateSociety);
-            this.tabProfile.Controls.Add(this.labelName);
-            this.tabProfile.Controls.Add(this.labelDescription);
-            this.tabProfile.Controls.Add(this.labelCategory);
-            this.tabProfile.Controls.Add(this.txtName);
-            this.tabProfile.Controls.Add(this.txtDescription);
-            this.tabProfile.Controls.Add(this.txtCategory);
-            this.tabProfile.Text = "Society Profile";
-
-            // ... (I kept your existing layout for tabs to avoid breaking it) ...
-
-            // Form Settings
-            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
-            this.ClientSize = new System.Drawing.Size(1200, 700);
+            this.lblWelcome.Size = new System.Drawing.Size(100, 24);
+            this.lblWelcome.TabIndex = 0;
+            this.lblWelcome.Text = "Welcome";
+            
+            // txtName
+            this.txtName.Location = new System.Drawing.Point(12, 50);
+            this.txtName.Name = "txtName";
+            this.txtName.Size = new System.Drawing.Size(200, 20);
+            this.txtName.TabIndex = 1;
+            
+            // txtDescription
+            this.txtDescription.Location = new System.Drawing.Point(12, 80);
+            this.txtDescription.Name = "txtDescription";
+            this.txtDescription.Size = new System.Drawing.Size(200, 20);
+            this.txtDescription.TabIndex = 2;
+            
+            // txtCategory
+            this.txtCategory.Location = new System.Drawing.Point(12, 110);
+            this.txtCategory.Name = "txtCategory";
+            this.txtCategory.Size = new System.Drawing.Size(200, 20);
+            this.txtCategory.TabIndex = 3;
+            
+            // btnUpdateSociety
+            this.btnUpdateSociety.Location = new System.Drawing.Point(12, 140);
+            this.btnUpdateSociety.Name = "btnUpdateSociety";
+            this.btnUpdateSociety.Size = new System.Drawing.Size(200, 30);
+            this.btnUpdateSociety.TabIndex = 4;
+            this.btnUpdateSociety.Text = "Update Society Profile";
+            this.btnUpdateSociety.UseVisualStyleBackColor = true;
+            this.btnUpdateSociety.Click += new System.EventHandler(this.btnUpdateSociety_Click);
+            
+            // membershipRequestsDataGridView
+            this.membershipRequestsDataGridView.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.membershipRequestsDataGridView.Location = new System.Drawing.Point(230, 50);
+            this.membershipRequestsDataGridView.Name = "membershipRequestsDataGridView";
+            this.membershipRequestsDataGridView.Size = new System.Drawing.Size(300, 150);
+            this.membershipRequestsDataGridView.TabIndex = 5;
+            
+            // btnApprove
+            this.btnApprove.Location = new System.Drawing.Point(230, 210);
+            this.btnApprove.Name = "btnApprove";
+            this.btnApprove.Size = new System.Drawing.Size(140, 30);
+            this.btnApprove.TabIndex = 6;
+            this.btnApprove.Text = "Approve Request";
+            this.btnApprove.UseVisualStyleBackColor = true;
+            this.btnApprove.Click += new System.EventHandler(this.btnApprove_Click);
+            
+            // btnReject
+            this.btnReject.Location = new System.Drawing.Point(390, 210);
+            this.btnReject.Name = "btnReject";
+            this.btnReject.Size = new System.Drawing.Size(140, 30);
+            this.btnReject.TabIndex = 7;
+            this.btnReject.Text = "Reject Request";
+            this.btnReject.UseVisualStyleBackColor = true;
+            this.btnReject.Click += new System.EventHandler(this.btnReject_Click);
+            
+            // eventsDataGridView
+            this.eventsDataGridView.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.eventsDataGridView.Location = new System.Drawing.Point(550, 50);
+            this.eventsDataGridView.Name = "eventsDataGridView";
+            this.eventsDataGridView.Size = new System.Drawing.Size(300, 150);
+            this.eventsDataGridView.TabIndex = 8;
+            
+            // btnAddEvent
+            this.btnAddEvent.Location = new System.Drawing.Point(550, 210);
+            this.btnAddEvent.Name = "btnAddEvent";
+            this.btnAddEvent.Size = new System.Drawing.Size(300, 30);
+            this.btnAddEvent.TabIndex = 9;
+            this.btnAddEvent.Text = "Add New Event";
+            this.btnAddEvent.UseVisualStyleBackColor = true;
+            this.btnAddEvent.Click += new System.EventHandler(this.btnAddEvent_Click);
+            
+            // membersDataGridView
+            this.membersDataGridView.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.membersDataGridView.Location = new System.Drawing.Point(12, 260);
+            this.membersDataGridView.Name = "membersDataGridView";
+            this.membersDataGridView.Size = new System.Drawing.Size(400, 150);
+            this.membersDataGridView.TabIndex = 10;
+            
+            // tasksDataGridView
+            this.tasksDataGridView.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.tasksDataGridView.Location = new System.Drawing.Point(450, 260);
+            this.tasksDataGridView.Name = "tasksDataGridView";
+            this.tasksDataGridView.Size = new System.Drawing.Size(400, 150);
+            this.tasksDataGridView.TabIndex = 11;
+            
+            // btnAssignTask
+            this.btnAssignTask.Location = new System.Drawing.Point(450, 420);
+            this.btnAssignTask.Name = "btnAssignTask";
+            this.btnAssignTask.Size = new System.Drawing.Size(400, 30);
+            this.btnAssignTask.TabIndex = 12;
+            this.btnAssignTask.Text = "Assign New Task";
+            this.btnAssignTask.UseVisualStyleBackColor = true;
+            this.btnAssignTask.Click += new System.EventHandler(this.btnAssignTask_Click);
+            
+            // SocietyHeadDashboard
+            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.ClientSize = new System.Drawing.Size(900, 500);
+            this.Controls.Add(this.btnAssignTask);
+            this.Controls.Add(this.tasksDataGridView);
+            this.Controls.Add(this.membersDataGridView);
+            this.Controls.Add(this.btnAddEvent);
+            this.Controls.Add(this.eventsDataGridView);
+            this.Controls.Add(this.btnReject);
+            this.Controls.Add(this.btnApprove);
+            this.Controls.Add(this.membershipRequestsDataGridView);
+            this.Controls.Add(this.btnUpdateSociety);
+            this.Controls.Add(this.txtCategory);
+            this.Controls.Add(this.txtDescription);
+            this.Controls.Add(this.txtName);
             this.Controls.Add(this.lblWelcome);
-            this.Controls.Add(this.btnLogout);
-            this.Controls.Add(this.tabControlMain);
-            this.MinimumSize = new System.Drawing.Size(1000, 650);
             this.Name = "SocietyHeadDashboard";
             this.Text = "Society Head Dashboard";
-            this.WindowState = System.Windows.Forms.FormWindowState.Maximized;
-
-            this.tabControlMain.ResumeLayout(false);
+            this.Load += new System.EventHandler(this.SocietyHeadDashboard_Load);
             this.ResumeLayout(false);
+            this.PerformLayout();
         }
-
-        #endregion
-
-        // Controls
-        public System.Windows.Forms.Button btnLogout;
-        public System.Windows.Forms.Label lblWelcome;
-
-        public System.Windows.Forms.TextBox txtName;
-        public System.Windows.Forms.TextBox txtDescription;
-        public System.Windows.Forms.TextBox txtCategory;
-
-        public System.Windows.Forms.DataGridView membershipRequestsDataGridView;
-        public System.Windows.Forms.DataGridView eventsDataGridView;
-        public System.Windows.Forms.DataGridView membersDataGridView;
-        public System.Windows.Forms.DataGridView tasksDataGridView;
-
-        public System.Windows.Forms.Button btnUpdateSociety;
-        public System.Windows.Forms.Button btnApprove;
-        public System.Windows.Forms.Button btnReject;
-        public System.Windows.Forms.Button btnAddEvent;
-        public System.Windows.Forms.Button btnEditEvent;
-        public System.Windows.Forms.Button btnDeleteEvent;
-        public System.Windows.Forms.Button btnRemoveMember;
-        public System.Windows.Forms.Button btnChangeRole;
-        public System.Windows.Forms.Button btnAssignTask;
-
-        public System.Windows.Forms.ComboBox roleComboBox;
-        private System.Windows.Forms.TabControl tabControlMain;
-        private System.Windows.Forms.TabPage tabProfile;
-        private System.Windows.Forms.TabPage tabMembershipRequests;
-        private System.Windows.Forms.TabPage tabEvents;
-        private System.Windows.Forms.TabPage tabMembers;
-        private System.Windows.Forms.TabPage tabTasks;
-
-        public System.Windows.Forms.Label labelName;
-        public System.Windows.Forms.Label labelDescription;
-        public System.Windows.Forms.Label labelCategory;
     }
 }
