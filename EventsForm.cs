@@ -128,6 +128,160 @@ namespace SocietiesManagementSystem
             LoadEvents();
         }
 
+        // Add these methods to EventsForm.cs
+
+        private void btnViewMyTickets_Click(object sender, EventArgs e)
+        {
+            int studentId = SessionManagement.CurrentUserId;
+            
+            DataTable dt = new DataTable();
+            dt.Columns.Add("Event Name", typeof(string));
+            dt.Columns.Add("Event Date", typeof(string));
+            dt.Columns.Add("Venue", typeof(string));
+            dt.Columns.Add("Ticket Number", typeof(string));
+            dt.Columns.Add("Registration Date", typeof(string));
+            
+            var myRegistrations = DatabaseHelper.EventRegistrations
+                .Where(r => r.StudentId == studentId)
+                .ToList();
+            
+            foreach (var reg in myRegistrations)
+            {
+                var event_item = DatabaseHelper.Events.FirstOrDefault(e => e.EventId == reg.EventId);
+                if (event_item != null)
+                {
+                    dt.Rows.Add(
+                        event_item.Title,
+                        event_item.EventDate.ToString("dd MMM yyyy HH:mm"),
+                        event_item.Venue,
+                        reg.TicketNumber,
+                        reg.RegistrationDate.ToString("dd MMM yyyy")
+                    );
+                }
+            }
+            
+            Form ticketForm = new Form();
+            ticketForm.Text = "My Event Tickets";
+            ticketForm.Size = new System.Drawing.Size(800, 500);
+            ticketForm.StartPosition = FormStartPosition.CenterParent;
+            
+            DataGridView dgvTickets = new DataGridView();
+            dgvTickets.Dock = DockStyle.Fill;
+            dgvTickets.DataSource = dt;
+            dgvTickets.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            
+            Button btnPrint = new Button();
+            btnPrint.Text = "Print Ticket";
+            btnPrint.Dock = DockStyle.Bottom;
+            btnPrint.Height = 40;
+            btnPrint.Click += (s, args) => PrintTicket(dgvTickets);
+            
+            Button btnDownload = new Button();
+            btnDownload.Text = "Download Ticket";
+            btnDownload.Dock = DockStyle.Bottom;
+            btnDownload.Height = 40;
+            btnDownload.Click += (s, args) => DownloadTicket(dgvTickets);
+            
+            FlowLayoutPanel panel = new FlowLayoutPanel();
+            panel.Dock = DockStyle.Bottom;
+            panel.Height = 45;
+            panel.Controls.Add(btnPrint);
+            panel.Controls.Add(btnDownload);
+            
+            ticketForm.Controls.Add(dgvTickets);
+            ticketForm.Controls.Add(panel);
+            ticketForm.ShowDialog();
+        }
+
+        private void PrintTicket(DataGridView dgv)
+        {
+            if (dgv.SelectedRows.Count == 0)
+            {
+                MessageBox.Show("Please select a ticket to print.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            
+            string eventName = dgv.SelectedRows[0].Cells["Event Name"].Value.ToString();
+            string ticketNumber = dgv.SelectedRows[0].Cells["Ticket Number"].Value.ToString();
+            string eventDate = dgv.SelectedRows[0].Cells["Event Date"].Value.ToString();
+            string venue = dgv.SelectedRows[0].Cells["Venue"].Value.ToString();
+            
+            string ticketContent = $@"
+                ========================================
+                    FAST SOCIETIES MANAGEMENT
+                        EVENT TICKET
+                ========================================
+                
+                Event: {eventName}
+                Date: {eventDate}
+                Venue: {venue}
+                Ticket #: {ticketNumber}
+                Attendee: {SessionManagement.CurrentFullName}
+                
+                ========================================
+                Please present this ticket at the venue
+                ========================================
+            ";
+            
+            MessageBox.Show(ticketContent, "Print Ticket", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            // In production, use PrintDocument class for actual printing
+        }
+
+        private void DownloadTicket(DataGridView dgv)
+        {
+            if (dgv.SelectedRows.Count == 0)
+            {
+                MessageBox.Show("Please select a ticket to download.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            
+            string eventName = dgv.SelectedRows[0].Cells["Event Name"].Value.ToString();
+            string ticketNumber = dgv.SelectedRows[0].Cells["Ticket Number"].Value.ToString();
+            
+            string fileName = $"Ticket_{eventName}_{ticketNumber}.txt";
+            string ticketContent = $"Event: {eventName}\nTicket: {ticketNumber}\nAttendee: {SessionManagement.CurrentFullName}";
+            
+            System.IO.File.WriteAllText(fileName, ticketContent);
+            MessageBox.Show($"Ticket saved as: {fileName}", "Download Complete", 
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private void btnValidateTicket_Click(object sender, EventArgs e)
+        {
+            string ticketNumber = Prompt.ShowDialog("Enter Ticket Number to validate:", "Validate Ticket");
+            
+            if (string.IsNullOrEmpty(ticketNumber)) return;
+            
+            var registration = DatabaseHelper.EventRegistrations
+                .FirstOrDefault(r => r.TicketNumber == ticketNumber);
+            
+            if (registration == null)
+            {
+                MessageBox.Show("❌ Invalid ticket number!", "Validation Failed", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+            
+            var event_item = DatabaseHelper.Events.FirstOrDefault(e => e.EventId == registration.EventId);
+            var student = DatabaseHelper.Users.FirstOrDefault(u => u.UserId == registration.StudentId);
+            
+            if (event_item == null || student == null) return;
+            
+            MessageBox.Show(
+                $"✅ VALID TICKET!\n\n" +
+                $"Event: {event_item.Title}\n" +
+                $"Attendee: {student.FullName}\n" +
+                $"Date: {event_item.EventDate:dd MMM yyyy}\n" +
+                $"Venue: {event_item.Venue}",
+                "Ticket Validation Successful",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information
+            );
+            
+            DatabaseHelper.LogActivity(SessionManagement.CurrentUserId, "TICKET_VALIDATED", 
+                $"Validated ticket {ticketNumber} for {event_item.Title}");
+        }
+
         // Optional: Open this form as dialog from Student Dashboard
         public static void ShowAsDialog()
         {

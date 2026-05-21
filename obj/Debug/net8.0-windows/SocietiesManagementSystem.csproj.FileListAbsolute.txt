@@ -1,3 +1,9 @@
+G:\smm project 2\sms\obj\Debug\net8.0-windows\SocietiesManagementSystem.csproj.AssemblyReference.cache
+G:\smm project 2\sms\obj\Debug\net8.0-windows\SocietiesManagementSystem.GeneratedMSBuildEditorConfig.editorconfig
+G:\smm project 2\sms\obj\Debug\net8.0-windows\SocietiesManagementSystem.AssemblyInfoInputs.cache
+G:\smm project 2\sms\obj\Debug\net8.0-windows\SocietiesManagementSystem.AssemblyInfo.cs
+G:\smm project 2\sms\obj\Debug\net8.0-windows\SocietiesManagementSystem.csproj.CoreCompileInputs.cache
+G:\smm project 2\sms\obj\Debug\net8.0-windows\SocietiesManagementSystem.sourcelink.json
 G:\smm project 2\sms\bin\Debug\net8.0-windows\SocietiesManagementSystem.exe
 G:\smm project 2\sms\bin\Debug\net8.0-windows\SocietiesManagementSystem.deps.json
 G:\smm project 2\sms\bin\Debug\net8.0-windows\SocietiesManagementSystem.runtimeconfig.json
@@ -33,12 +39,6 @@ G:\smm project 2\sms\bin\Debug\net8.0-windows\runtimes\linux-x64\native\SQLite.I
 G:\smm project 2\sms\bin\Debug\net8.0-windows\runtimes\osx-x64\native\SQLite.Interop.dll
 G:\smm project 2\sms\bin\Debug\net8.0-windows\runtimes\win-x64\native\SQLite.Interop.dll
 G:\smm project 2\sms\bin\Debug\net8.0-windows\runtimes\win-x86\native\SQLite.Interop.dll
-G:\smm project 2\sms\obj\Debug\net8.0-windows\SocietiesManagementSystem.csproj.AssemblyReference.cache
-G:\smm project 2\sms\obj\Debug\net8.0-windows\SocietiesManagementSystem.GeneratedMSBuildEditorConfig.editorconfig
-G:\smm project 2\sms\obj\Debug\net8.0-windows\SocietiesManagementSystem.AssemblyInfoInputs.cache
-G:\smm project 2\sms\obj\Debug\net8.0-windows\SocietiesManagementSystem.AssemblyInfo.cs
-G:\smm project 2\sms\obj\Debug\net8.0-windows\SocietiesManagementSystem.csproj.CoreCompileInputs.cache
-G:\smm project 2\sms\obj\Debug\net8.0-windows\SocietiesManagementSystem.sourcelink.json
 G:\smm project 2\sms\obj\Debug\net8.0-windows\SocietiesManagementSystem.csproj.CopyComplete
 G:\smm project 2\sms\obj\Debug\net8.0-windows\SocietiesManagementSystem.dll
 G:\smm project 2\sms\obj\Debug\net8.0-windows\refint\SocietiesManagementSystem.dll

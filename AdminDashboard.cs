@@ -13,7 +13,7 @@ namespace SocietiesManagementSystem
             this.Load += AdminDashboard_Load;
         }
 
-        private void AdminDashboard_Load(object sender, EventArgs e)
+        private void AdminDashboard_Load(object? sender, EventArgs e)
         {
             // Dynamic control finding (safest approach)
             FindAndSetWelcomeLabel();
@@ -35,9 +35,7 @@ namespace SocietiesManagementSystem
 
         private void LoadUsers()
         {
-            var grid = this.Controls.Find("dgvUsers", true).FirstOrDefault() as DataGridView
-                    ?? this.Controls.OfType<DataGridView>().FirstOrDefault(g => g.Name.ToLower().Contains("user"));
-
+            var grid = usersDataGridView;
             if (grid != null)
             {
                 DataTable dt = new DataTable();
@@ -46,12 +44,10 @@ namespace SocietiesManagementSystem
                 dt.Columns.Add("Full Name", typeof(string));
                 dt.Columns.Add("Role", typeof(string));
                 dt.Columns.Add("Status", typeof(string));
-
                 foreach (var u in DatabaseHelper.Users)
                 {
                     dt.Rows.Add(u.UserId, u.Username, u.FullName, u.Role, u.Status);
                 }
-
                 grid.DataSource = dt;
             }
         }
@@ -67,19 +63,63 @@ namespace SocietiesManagementSystem
 
         private void LoadSocieties()
         {
-            var grid = this.Controls.Find("societiesDataGridView", true).FirstOrDefault() as DataGridView
-                    ?? this.Controls.OfType<DataGridView>().FirstOrDefault(g => g.Name.ToLower().Contains("society"));
-
+            var grid = societiesDataGridView;
             if (grid != null)
                 grid.DataSource = DatabaseHelper.GetAllSocieties();
         }
 
         private void btnApproveSociety_Click(object sender, EventArgs e) => MessageBox.Show("Society Approved (Demo)", "Success");
 
-        private void LoadPendingEvents() { }
+        private void LoadPendingEvents()
+        {
+            var grid = eventsDataGridView;
+            if (grid != null)
+            {
+                DataTable dt = new DataTable();
+                dt.Columns.Add("EventId", typeof(int));
+                dt.Columns.Add("SocietyId", typeof(int));
+                dt.Columns.Add("Title", typeof(string));
+                dt.Columns.Add("Description", typeof(string));
+                dt.Columns.Add("EventDate", typeof(string));
+                dt.Columns.Add("Venue", typeof(string));
+                dt.Columns.Add("Capacity", typeof(int));
+                dt.Columns.Add("Status", typeof(string));
+                foreach (var e in DatabaseHelper.Events)
+                {
+                    dt.Rows.Add(e.EventId, e.SocietyId, e.Title, e.Description, e.EventDate.ToString("yyyy-MM-dd"), e.Venue, e.Capacity, e.Status);
+                }
+                grid.DataSource = dt;
+            }
+        }
         private void btnApproveEvent_Click(object sender, EventArgs e) => MessageBox.Show("Event Approved (Demo)", "Success");
-
-        private void LoadActivityLogs() { }
+        private void LoadActivityLogs()
+        {
+            var grid = activityLogDataGridView;
+            if (grid != null)
+            {
+                DataTable dt = new DataTable();
+                dt.Columns.Add("LogId", typeof(int));
+                dt.Columns.Add("UserId", typeof(int));
+                dt.Columns.Add("Action", typeof(string));
+                dt.Columns.Add("Description", typeof(string));
+                dt.Columns.Add("Timestamp", typeof(string));
+                // Demo: fetch from DB if needed, here just show 10 logs
+                using (var conn = new Microsoft.Data.Sqlite.SqliteConnection(DatabaseHelper.ConnectionString))
+                {
+                    conn.Open();
+                    var cmd = conn.CreateCommand();
+                    cmd.CommandText = "SELECT LogId, UserId, Action, Description, Timestamp FROM ActivityLogs ORDER BY LogId DESC LIMIT 20";
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            dt.Rows.Add(reader.GetInt32(0), reader.GetInt32(1), reader.GetString(2), reader.GetString(3), reader.GetString(4));
+                        }
+                    }
+                }
+                grid.DataSource = dt;
+            }
+        }
 
         private void LoadReports()
         {
@@ -105,5 +145,8 @@ namespace SocietiesManagementSystem
                 this.Close();
             }
         }
+
+        // Add these methods to AdminDashboard.cs
+
     }
 }

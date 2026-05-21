@@ -25,6 +25,7 @@ namespace SocietiesManagementSystem
         public string Description { get; set; } = "";
         public string Category { get; set; } = "";
         public int? HeadUserId { get; set; }
+        public string Status { get; set; } = "pending";
     }
 
     public class TaskItem
@@ -50,6 +51,7 @@ namespace SocietiesManagementSystem
         public string Venue { get; set; } = "";
         public int Capacity { get; set; }
         public string Status { get; set; } = "pending";
+        public int? CreatorUserId { get; set; }
     }
 
     public class EventRegistration
@@ -73,7 +75,7 @@ namespace SocietiesManagementSystem
     // ====================== DATABASE HELPER ======================
     public static class DatabaseHelper
     {
-        private static string ConnectionString => "Data Source=SocietiesDB.db;";
+        public static string ConnectionString => "Data Source=SocietiesDB.db;";
         
         // In-memory collections
         public static List<User> Users { get; private set; } = new List<User>();
@@ -165,21 +167,104 @@ namespace SocietiesManagementSystem
             using (var conn = new SqliteConnection(ConnectionString))
             {
                 conn.Open();
+                // Users
                 InsertUserIfNotExists(conn, "admin", AuthService.HashPassword("admin123"), "System Administrator", "admin@fast.edu.pk", "admin");
                 InsertUserIfNotExists(conn, "head", AuthService.HashPassword("head123"), "Ahmed Khan", "ahmed.khan@fast.edu.pk", "society_head");
                 InsertUserIfNotExists(conn, "student", AuthService.HashPassword("student123"), "Ali Hassan", "ali.hassan@fast.edu.pk", "student");
-                
+                for (int i = 1; i <= 12; i++)
+                {
+                    InsertUserIfNotExists(conn, $"student{i}", AuthService.HashPassword($"pass{i}"), $"Student {i} Name", $"student{i}@fast.edu.pk", "student");
+                }
+
+                // Societies
                 string checkSociety = "SELECT COUNT(*) FROM Societies";
                 using (var cmd = new SqliteCommand(checkSociety, conn))
                 {
                     if (Convert.ToInt32(cmd.ExecuteScalar()) == 0)
                     {
-                        string insertSociety = @"INSERT INTO Societies (Name, Description, Category, HeadUserId) 
-                                                VALUES ('FAST Programming Club', 'Official coding and development society of FAST', 'Technical', 
-                                                (SELECT UserId FROM Users WHERE Role = 'society_head' LIMIT 1))";
-                        using (var cmd2 = new SqliteCommand(insertSociety, conn))
+                        for (int i = 1; i <= 10; i++)
                         {
-                            cmd2.ExecuteNonQuery();
+                            string insertSociety = $@"INSERT INTO Societies (Name, Description, Category, HeadUserId) 
+                                VALUES ('Society {i}', 'Description for Society {i}', 'Category {i%3}', 
+                                (SELECT UserId FROM Users WHERE Username = 'head'))";
+                            using (var cmd2 = new SqliteCommand(insertSociety, conn))
+                            {
+                                cmd2.ExecuteNonQuery();
+                            }
+                        }
+                    }
+                }
+
+                // Events
+                string checkEvent = "SELECT COUNT(*) FROM Events";
+                using (var cmd = new SqliteCommand(checkEvent, conn))
+                {
+                    if (Convert.ToInt32(cmd.ExecuteScalar()) == 0)
+                    {
+                        for (int i = 1; i <= 15; i++)
+                        {
+                            string insertEvent = $@"INSERT INTO Events (SocietyId, Title, Description, EventDate, Venue, Capacity, Status) 
+                                VALUES ({(i%10)+1}, 'Event {i}', 'Description for Event {i}', date('now', '+{i} days'), 'Venue {i}', {50+i*5}, 'pending')";
+                            using (var cmd2 = new SqliteCommand(insertEvent, conn))
+                            {
+                                cmd2.ExecuteNonQuery();
+                            }
+                        }
+                    }
+                }
+
+                // Memberships
+                string checkMembership = "SELECT COUNT(*) FROM Memberships";
+                using (var cmd = new SqliteCommand(checkMembership, conn))
+                {
+                    if (Convert.ToInt32(cmd.ExecuteScalar()) == 0)
+                    {
+                        for (int i = 1; i <= 15; i++)
+                        {
+                            string insertMembership = $@"INSERT INTO Memberships (StudentId, SocietyId, JoinDate, Status) 
+                                VALUES ({(i%12)+2}, {(i%10)+1}, date('now', '-{i} days'), 'approved')";
+                            using (var cmd2 = new SqliteCommand(insertMembership, conn))
+                            {
+                                cmd2.ExecuteNonQuery();
+                            }
+                        }
+                    }
+                }
+
+                // Tasks
+                string checkTask = "SELECT COUNT(*) FROM Tasks";
+                using (var cmd = new SqliteCommand(checkTask, conn))
+                {
+                    if (Convert.ToInt32(cmd.ExecuteScalar()) == 0)
+                    {
+                        for (int i = 1; i <= 12; i++)
+                        {
+                            string insertTask = $@"INSERT INTO Tasks (SocietyId, Title, Description, AssignedTo, AssignedBy, DueDate, Status) 
+                                VALUES ({(i%10)+1}, 'Task {i}', 'Description for Task {i}', {(i%12)+2}, 1, date('now', '+{i} days'), 'pending')";
+                            using (var cmd2 = new SqliteCommand(insertTask, conn))
+                            {
+                                cmd2.ExecuteNonQuery();
+                            }
+                        }
+                    }
+                }
+
+                // Announcements (if you have an Announcements table, add similar logic here)
+
+                // Activity Logs
+                string checkLog = "SELECT COUNT(*) FROM ActivityLogs";
+                using (var cmd = new SqliteCommand(checkLog, conn))
+                {
+                    if (Convert.ToInt32(cmd.ExecuteScalar()) == 0)
+                    {
+                        for (int i = 1; i <= 10; i++)
+                        {
+                            string insertLog = $@"INSERT INTO ActivityLogs (UserId, Action, Description, Timestamp) 
+                                VALUES ({(i%12)+2}, 'ACTION_{i}', 'Description for action {i}', datetime('now', '-{i} days'))";
+                            using (var cmd2 = new SqliteCommand(insertLog, conn))
+                            {
+                                cmd2.ExecuteNonQuery();
+                            }
                         }
                     }
                 }
@@ -395,6 +480,163 @@ namespace SocietiesManagementSystem
                     return cmd.ExecuteNonQuery();
                 }
             }
+        }
+
+        // Add these methods to DatabaseHelper.cs
+
+        public static void ApproveSociety(int societyId, int adminId)
+        {
+            string query = "UPDATE Societies SET Status = 'approved' WHERE SocietyId = @sid";
+            var parameters = new[] { new SqliteParameter("@sid", societyId) };
+            ExecuteNonQuery(query, parameters);
+            
+            // Update in-memory list
+            var society = Societies.FirstOrDefault(s => s.SocietyId == societyId);
+            if (society != null) society.Status = "approved";
+            
+            LogActivity(adminId, "SOCIETY_APPROVED", $"Society ID {societyId} was approved");
+
+            // Notify society head
+            var societyHeadId = society?.HeadUserId;
+            if (societyHeadId != null)
+            {
+                NotificationService.SendNotification(societyHeadId.Value,
+                    "Society Approved",
+                    $"Your society '{society.Name}' has been approved by admin.",
+                    "success");
+            }
+        }
+
+        public static void RejectSociety(int societyId, int adminId, string reason = "")
+        {
+            string query = "UPDATE Societies SET Status = 'rejected' WHERE SocietyId = @sid";
+            var parameters = new[] { new SqliteParameter("@sid", societyId) };
+            ExecuteNonQuery(query, parameters);
+            
+            var society = Societies.FirstOrDefault(s => s.SocietyId == societyId);
+            if (society != null) society.Status = "rejected";
+            
+            LogActivity(adminId, "SOCIETY_REJECTED", $"Society ID {societyId} was rejected. Reason: {reason}");
+
+            // Notify society head
+            var societyHeadId = society?.HeadUserId;
+            if (societyHeadId != null)
+            {
+                NotificationService.SendNotification(societyHeadId.Value,
+                    "Society Rejected",
+                    $"Your society '{society.Name}' was rejected by admin. Reason: {reason}",
+                    "error");
+            }
+        }
+
+        public static void ApproveEvent(int eventId, int adminId)
+        {
+            string query = "UPDATE Events SET Status = 'approved' WHERE EventId = @eid";
+            var parameters = new[] { new SqliteParameter("@eid", eventId) };
+            ExecuteNonQuery(query, parameters);
+            
+            var event_item = Events.FirstOrDefault(e => e.EventId == eventId);
+            if (event_item != null) event_item.Status = "approved";
+            
+            LogActivity(adminId, "EVENT_APPROVED", $"Event ID {eventId} was approved");
+
+            // Notify event creator (assuming event_item.CreatorUserId exists)
+            var creatorId = event_item?.CreatorUserId;
+            if (creatorId != null)
+            {
+                NotificationService.SendNotification(creatorId.Value,
+                    "Event Approved",
+                    $"Your event '{event_item.Title}' has been approved by admin.",
+                    "success");
+            }
+        }
+
+        public static void RejectEvent(int eventId, int adminId, string reason = "")
+        {
+            string query = "UPDATE Events SET Status = 'rejected' WHERE EventId = @eid";
+            var parameters = new[] { new SqliteParameter("@eid", eventId) };
+            ExecuteNonQuery(query, parameters);
+            
+            var event_item = Events.FirstOrDefault(e => e.EventId == eventId);
+            if (event_item != null) event_item.Status = "rejected";
+            
+            LogActivity(adminId, "EVENT_REJECTED", $"Event ID {eventId} was rejected. Reason: {reason}");
+
+            // Notify event creator (assuming event_item.CreatorUserId exists)
+            var creatorId = event_item?.CreatorUserId;
+            if (creatorId != null)
+            {
+                NotificationService.SendNotification(creatorId.Value,
+                    "Event Rejected",
+                    $"Your event '{event_item.Title}' was rejected by admin. Reason: {reason}",
+                    "error");
+            }
+        }
+
+        public static void ApproveMembership(int membershipId, int headId)
+        {
+            string query = "UPDATE Memberships SET Status = 'approved' WHERE MembershipId = @mid";
+            var parameters = new[] { new SqliteParameter("@mid", membershipId) };
+            ExecuteNonQuery(query, parameters);
+            
+            var membership = Memberships.FirstOrDefault(m => m.MembershipId == membershipId);
+            if (membership != null) membership.Status = "approved";
+            
+            LogActivity(headId, "MEMBERSHIP_APPROVED", $"Membership ID {membershipId} was approved");
+
+            // Notify student
+            var studentId = membership?.StudentId;
+            if (studentId != null)
+            {
+                NotificationService.SendNotification(studentId.Value,
+                    "Membership Approved",
+                    $"Your membership request has been approved.",
+                    "success");
+            }
+        }
+
+        public static void RejectMembership(int membershipId, int headId, string reason = "")
+        {
+            string query = "UPDATE Memberships SET Status = 'rejected' WHERE MembershipId = @mid";
+            var parameters = new[] { new SqliteParameter("@mid", membershipId) };
+            ExecuteNonQuery(query, parameters);
+            
+            var membership = Memberships.FirstOrDefault(m => m.MembershipId == membershipId);
+            if (membership != null) membership.Status = "rejected";
+
+            // Notify student
+            var studentId = membership?.StudentId;
+            if (studentId != null)
+            {
+                NotificationService.SendNotification(studentId.Value,
+                    "Membership Rejected",
+                    $"Your membership request was rejected. Reason: {reason}",
+                    "error");
+            }
+            
+            LogActivity(headId, "MEMBERSHIP_REJECTED", $"Membership ID {membershipId} was rejected. Reason: {reason}");
+        }
+
+        public static DataTable GetPendingSocieties()
+        {
+            string query = "SELECT SocietyId, Name, Description, Category FROM Societies WHERE Status = 'pending'";
+            return ExecuteQuery(query);
+        }
+
+        public static DataTable GetPendingEvents()
+        {
+            string query = "SELECT EventId, Title, Description, EventDate, SocietyId FROM Events WHERE Status = 'pending'";
+            return ExecuteQuery(query);
+        }
+
+        public static DataTable GetPendingMembershipsForSociety(int societyId)
+        {
+            string query = @"SELECT m.MembershipId, u.FullName as StudentName, u.Email, m.JoinDate 
+                            FROM Memberships m
+                            JOIN Users u ON m.StudentId = u.UserId
+                            WHERE m.SocietyId = @sid AND m.Status = 'pending'";
+            var parameters = new[] { new SqliteParameter("@sid", societyId) };
+            return ExecuteQuery(query, parameters);
         }
     }
 }
