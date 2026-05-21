@@ -507,6 +507,310 @@ namespace SocietiesManagementSystem
             }
         }
 
+        public static (bool success, string message, int userId) CreateUser(string username, string password, string fullName, string email, string role)
+        {
+            try
+            {
+                // Check if username exists
+                string checkQuery = "SELECT COUNT(*) FROM Users WHERE Username = @username";
+                var checkParams = new[] { new SqliteParameter("@username", username) };
+                var result = ExecuteQuery(checkQuery, checkParams);
+                
+                if (Convert.ToInt32(result.Rows[0][0]) > 0)
+                    return (false, "Username already exists", -1);
+                
+                string hashedPassword = AuthService.HashPassword(password);
+                string insertQuery = @"INSERT INTO Users (Username, PasswordHash, FullName, Email, Role, Status) 
+                                    VALUES (@username, @hash, @fullname, @email, @role, 'active')";
+                
+                var parameters = new[]
+                {
+                    new SqliteParameter("@username", username),
+                    new SqliteParameter("@hash", hashedPassword),
+                    new SqliteParameter("@fullname", fullName),
+                    new SqliteParameter("@email", email),
+                    new SqliteParameter("@role", role)
+                };
+                
+                ExecuteNonQuery(insertQuery, parameters);
+                
+                // Get the new user ID
+                string getIdQuery = "SELECT last_insert_rowid()";
+                var idResult = ExecuteQuery(getIdQuery);
+                int newId = Convert.ToInt32(idResult.Rows[0][0]);
+                
+                LogActivity(SessionManagement.GetCurrentUser()?.UserId ?? 1, "USER_CREATED", $"Created user: {username}");
+                
+                return (true, "User created successfully", newId);
+            }
+            catch (Exception ex)
+            {
+                return (false, $"Error: {ex.Message}", -1);
+            }
+        }
+
+        public static (bool success, string message) UpdateUser(int userId, string fullName, string email, string role, string status)
+        {
+            try
+            {
+                string query = "UPDATE Users SET FullName = @fullname, Email = @email, Role = @role, Status = @status WHERE UserId = @userId";
+                var parameters = new[]
+                {
+                    new SqliteParameter("@fullname", fullName),
+                    new SqliteParameter("@email", email),
+                    new SqliteParameter("@role", role),
+                    new SqliteParameter("@status", status),
+                    new SqliteParameter("@userId", userId)
+                };
+                
+                ExecuteNonQuery(query, parameters);
+                
+                // Update in-memory list
+                var user = Users.FirstOrDefault(u => u.UserId == userId);
+                if (user != null)
+                {
+                    user.FullName = fullName;
+                    user.Email = email;
+                    user.Role = role;
+                    user.Status = status;
+                }
+                
+                LogActivity(SessionManagement.GetCurrentUser()?.UserId ?? 1, "USER_UPDATED", $"Updated user ID {userId}");
+                
+                return (true, "User updated successfully");
+            }
+            catch (Exception ex)
+            {
+                return (false, $"Error: {ex.Message}");
+            }
+        }
+
+        public static (bool success, string message) DeleteUser(int userId)
+        {
+            try
+            {
+                // Check if user exists
+                var user = GetUserById(userId);
+                if (user == null)
+                    return (false, "User not found");
+                
+                // Don't delete admin if it's the only one
+                if (user.Role == "admin")
+                {
+                    string adminCountQuery = "SELECT COUNT(*) FROM Users WHERE Role = 'admin'";
+                    var countResult = ExecuteQuery(adminCountQuery);
+                    if (Convert.ToInt32(countResult.Rows[0][0]) <= 1)
+                        return (false, "Cannot delete the last admin user");
+                }
+                
+                string query = "DELETE FROM Users WHERE UserId = @userId";
+                var parameters = new[] { new SqliteParameter("@userId", userId) };
+                ExecuteNonQuery(query, parameters);
+                
+                // Remove from in-memory list
+                var userToRemove = Users.FirstOrDefault(u => u.UserId == userId);
+                if (userToRemove != null)
+                    Users.Remove(userToRemove);
+                
+                LogActivity(SessionManagement.GetCurrentUser()?.UserId ?? 1, "USER_DELETED", $"Deleted user ID {userId} (Username: {user.Username})");
+                
+                return (true, "User deleted successfully");
+            }
+            catch (Exception ex)
+            {
+                return (false, $"Error: {ex.Message}");
+            }
+        }
+
+        public static DataTable GetAllUsers()
+        {
+            string query = "SELECT UserId, Username, FullName, Email, Role, Status FROM Users ORDER BY UserId";
+            return ExecuteQuery(query);
+        }
+
+        public static DataTable GetSocietiesByHead(int headUserId)
+        {
+            string query = "SELECT SocietyId, Name, Description, Category, Status FROM Societies WHERE HeadUserId = @headId";
+            var parameters = new[] { new SqliteParameter("@headId", headUserId) };
+            return ExecuteQuery(query, parameters);
+        }
+
+        public static DataTable GetMembersBySociety(int societyId)
+        {
+            string query = @"SELECT u.UserId, u.FullName, u.Email, m.JoinDate, m.Status
+                            FROM Memberships m
+                            JOIN Users u ON m.StudentId = u.UserId
+                            WHERE m.SocietyId = @socId AND m.Status = 'approved'";
+            var parameters = new[] { new SqliteParameter("@socId", societyId) };
+            return ExecuteQuery(query, parameters);
+        }
+
+        public static DataTable GetEventsBySociety(int societyId)
+        {
+            string query = "SELECT EventId, Title, Description, EventDate, Venue, Capacity, Status FROM Events WHERE SocietyId = @socId ORDER BY EventDate";
+            var parameters = new[] { new SqliteParameter("@socId", societyId) };
+            return ExecuteQuery(query, parameters);
+        }
+
+        public static bool CreateEvent(Event eventItem)
+        {
+            string query = @"INSERT INTO Events (SocietyId, Title, Description, EventDate, Venue, Capacity, Status, CreatorUserId) 
+                            VALUES (@sid, @title, @desc, @date, @venue, @cap, 'pending', @creator)";
+            
+            var parameters = new[]
+            {
+                new SqliteParameter("@sid", eventItem.SocietyId),
+                new SqliteParameter("@title", eventItem.Title),
+                new SqliteParameter("@desc", eventItem.Description),
+                new SqliteParameter("@date", eventItem.EventDate.ToString("yyyy-MM-dd HH:mm:ss")),
+                new SqliteParameter("@venue", eventItem.Venue),
+                new SqliteParameter("@cap", eventItem.Capacity),
+                new SqliteParameter("@creator", eventItem.CreatorUserId ?? SessionManagement.GetCurrentUser()?.UserId ?? 1)
+            };
+            
+            ExecuteNonQuery(query, parameters);
+            
+            // Add to in-memory list
+            eventItem.EventId = Events.Count + 1;
+            Events.Add(eventItem);
+            
+            LogActivity(SessionManagement.GetCurrentUser()?.UserId ?? 1, "EVENT_CREATED", $"Created event: {eventItem.Title}");
+            
+            return true;
+        }
+
+        public static bool UpdateEvent(Event eventItem)
+        {
+            string query = @"UPDATE Events SET Title = @title, Description = @desc, EventDate = @date, 
+                            Venue = @venue, Capacity = @cap WHERE EventId = @eid";
+            
+            var parameters = new[]
+            {
+                new SqliteParameter("@title", eventItem.Title),
+                new SqliteParameter("@desc", eventItem.Description),
+                new SqliteParameter("@date", eventItem.EventDate.ToString("yyyy-MM-dd HH:mm:ss")),
+                new SqliteParameter("@venue", eventItem.Venue),
+                new SqliteParameter("@cap", eventItem.Capacity),
+                new SqliteParameter("@eid", eventItem.EventId)
+            };
+            
+            ExecuteNonQuery(query, parameters);
+            
+            // Update in-memory list
+            var existingEvent = Events.FirstOrDefault(e => e.EventId == eventItem.EventId);
+            if (existingEvent != null)
+            {
+                existingEvent.Title = eventItem.Title;
+                existingEvent.Description = eventItem.Description;
+                existingEvent.EventDate = eventItem.EventDate;
+                existingEvent.Venue = eventItem.Venue;
+                existingEvent.Capacity = eventItem.Capacity;
+            }
+            
+            LogActivity(SessionManagement.GetCurrentUser()?.UserId ?? 1, "EVENT_UPDATED", $"Updated event ID {eventItem.EventId}");
+            
+            return true;
+        }
+
+        public static bool DeleteEvent(int eventId)
+        {
+            string query = "DELETE FROM Events WHERE EventId = @eid";
+            var parameters = new[] { new SqliteParameter("@eid", eventId) };
+            ExecuteNonQuery(query, parameters);
+            
+            // Remove from in-memory list
+            var eventToRemove = Events.FirstOrDefault(e => e.EventId == eventId);
+            if (eventToRemove != null)
+                Events.Remove(eventToRemove);
+            
+            // Also delete registrations
+            string deleteRegQuery = "DELETE FROM EventRegistrations WHERE EventId = @eid";
+            ExecuteNonQuery(deleteRegQuery, parameters);
+            
+            LogActivity(SessionManagement.GetCurrentUser()?.UserId ?? 1, "EVENT_DELETED", $"Deleted event ID {eventId}");
+            
+            return true;
+        }
+
+        public static DataTable GenerateSocietyReport(int societyId)
+        {
+            // Members count
+            string membersQuery = @"SELECT COUNT(*) as MemberCount FROM Memberships 
+                                WHERE SocietyId = @sid AND Status = 'approved'";
+            var parameters = new[] { new SqliteParameter("@sid", societyId) };
+            var membersResult = ExecuteQuery(membersQuery, parameters);
+            
+            // Events count
+            string eventsQuery = @"SELECT COUNT(*) as EventCount, 
+                                SUM(CASE WHEN Status = 'approved' THEN 1 ELSE 0 END) as ApprovedEvents,
+                                SUM(CASE WHEN Status = 'pending' THEN 1 ELSE 0 END) as PendingEvents
+                                FROM Events WHERE SocietyId = @sid";
+            var eventsResult = ExecuteQuery(eventsQuery, parameters);
+            
+            // Tasks count
+            string tasksQuery = @"SELECT COUNT(*) as TaskCount,
+                                SUM(CASE WHEN Status = 'completed' THEN 1 ELSE 0 END) as CompletedTasks,
+                                SUM(CASE WHEN Status = 'pending' THEN 1 ELSE 0 END) as PendingTasks
+                                FROM Tasks WHERE SocietyId = @sid";
+            var tasksResult = ExecuteQuery(tasksQuery, parameters);
+            
+            // Combine results
+            DataTable report = new DataTable();
+            report.Columns.Add("Metric");
+            report.Columns.Add("Value");
+            
+            report.Rows.Add("Total Members", membersResult.Rows[0]["MemberCount"]);
+            report.Rows.Add("Total Events", eventsResult.Rows[0]["EventCount"]);
+            report.Rows.Add("Approved Events", eventsResult.Rows[0]["ApprovedEvents"]);
+            report.Rows.Add("Pending Events", eventsResult.Rows[0]["PendingEvents"]);
+            report.Rows.Add("Total Tasks", tasksResult.Rows[0]["TaskCount"]);
+            report.Rows.Add("Completed Tasks", tasksResult.Rows[0]["CompletedTasks"]);
+            report.Rows.Add("Pending Tasks", tasksResult.Rows[0]["PendingTasks"]);
+            
+            return report;
+        }
+
+        public static DataTable GenerateUniversityReport()
+        {
+            DataTable report = new DataTable();
+            report.Columns.Add("Category");
+            report.Columns.Add("Count");
+            
+            // Total students
+            string studentsQuery = "SELECT COUNT(*) FROM Users WHERE Role = 'student'";
+            var studentsResult = ExecuteQuery(studentsQuery);
+            report.Rows.Add("Total Students", studentsResult.Rows[0][0]);
+            
+            // Total societies
+            string societiesQuery = "SELECT COUNT(*) FROM Societies WHERE Status = 'approved'";
+            var societiesResult = ExecuteQuery(societiesQuery);
+            report.Rows.Add("Active Societies", societiesResult.Rows[0][0]);
+            
+            // Total events this month
+            string eventsQuery = @"SELECT COUNT(*) FROM Events 
+                                WHERE EventDate >= date('now', 'start of month') 
+                                AND EventDate <= date('now', 'end of month')
+                                AND Status = 'approved'";
+            var eventsResult = ExecuteQuery(eventsQuery);
+            report.Rows.Add("Events This Month", eventsResult.Rows[0][0]);
+            
+            // Total memberships
+            string membershipsQuery = "SELECT COUNT(*) FROM Memberships WHERE Status = 'approved'";
+            var membershipsResult = ExecuteQuery(membershipsQuery);
+            report.Rows.Add("Total Memberships", membershipsResult.Rows[0][0]);
+            
+            // Pending approvals
+            string pendingSocieties = "SELECT COUNT(*) FROM Societies WHERE Status = 'pending'";
+            var pendingSocResult = ExecuteQuery(pendingSocieties);
+            report.Rows.Add("Pending Societies", pendingSocResult.Rows[0][0]);
+            
+            string pendingEvents = "SELECT COUNT(*) FROM Events WHERE Status = 'pending'";
+            var pendingEventsResult = ExecuteQuery(pendingEvents);
+            report.Rows.Add("Pending Events", pendingEventsResult.Rows[0][0]);
+            
+            return report;
+        }
+
         public static void RejectSociety(int societyId, int adminId, string reason = "")
         {
             string query = "UPDATE Societies SET Status = 'rejected' WHERE SocietyId = @sid";
